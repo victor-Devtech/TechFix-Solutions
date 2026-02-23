@@ -33,4 +33,19 @@ public class GerenciadorFila {
     public int tamanhoFila() {
         return this.filaOrdemServico.size();
     }
+
+    public void envelhecerFila(int tempoAcrescimo) {
+        if (filaVazia()) return;
+
+        // Tira todas as OSs da fila para uma lista temporária
+        java.util.List<OrdemServico> temporaria = new java.util.ArrayList<>(this.filaOrdemServico);
+        this.filaOrdemServico.clear();
+        //  Incrementa o tempo e devolve
+
+        // add() a PriorityQueue recalcula as prioridades automaticamente
+        for (OrdemServico os : temporaria) {
+            os.incrementarTempoEspera(tempoAcrescimo);
+            this.filaOrdemServico.add(os);
+        }
+    }
 }

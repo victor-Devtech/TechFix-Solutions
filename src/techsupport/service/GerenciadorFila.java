@@ -2,6 +2,8 @@ package techsupport.service;
 
 import techsupport.model.OrdemServico;
 import techsupport.strategy.EstrategiaEscalonamento;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.PriorityQueue;
 import java.util.Queue;
 

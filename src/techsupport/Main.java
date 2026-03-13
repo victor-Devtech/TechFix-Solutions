@@ -60,30 +60,35 @@ public class Main {
                     System.out.print("Nível de Gravidade (1 a 10): ");
                     int gravidade = Integer.parseInt(scanner.nextLine());
 
-                    System.out.print("Tempo estimado para resolução (em horas): ");
-                    double tempoEstimado = Double.parseDouble(scanner.nextLine());
-
-                    OrdemServico novaOs;
-                    String id = "OS-" + (fila.tamanhoFila() + 1);
-
-                    if (tipoOs == 1) {
-                        System.out.print("Peça necessária para o conserto: ");
-                        String peca = scanner.nextLine();
-                        novaOs = new OSHardware(id, descricao, complexidade, gravidade, tempoEstimado, peca);
+                    if (gravidade < 1 || gravidade > 10) {
+                        System.out.println("\n⚠️ ERRO: Gravidade deve ser entre 1 e 10. Cadastro cancelado.");
                     } else {
-                        System.out.print("Sistema Operacional do cliente (Ex: Windows 11): ");
-                        String so = scanner.nextLine();
-                        novaOs = new OSSoftware(id, descricao, complexidade, gravidade, tempoEstimado, so);
-                    }
 
-                    System.out.print("\nSalvando no banco de dados");
-                    for (int i = 0; i < 3; i++) {
-                        Thread.sleep(400);
-                        System.out.print(".");
-                    }
+                        System.out.print("Tempo estimado para resolução (em horas): ");
+                        double tempoEstimado = Double.parseDouble(scanner.nextLine());
 
-                    fila.adicionarOS(novaOs);
-                    System.out.println("\n✅ OS " + id + " Cadastrada com Sucesso!");
+                        OrdemServico novaOs;
+                        String id = OrdemServico.gerarProximoID();
+
+                        if (tipoOs == 1) {
+                            System.out.print("Peça necessária para o conserto: ");
+                            String peca = scanner.nextLine();
+                            novaOs = new OSHardware(id, descricao, complexidade, gravidade, tempoEstimado, peca);
+                        } else {
+                            System.out.print("Sistema Operacional do cliente (Ex: Windows 11): ");
+                            String so = scanner.nextLine();
+                            novaOs = new OSSoftware(id, descricao, complexidade, gravidade, tempoEstimado, so);
+                        }
+
+                        System.out.print("\nSalvando no banco de dados");
+                        for (int i = 0; i < 3; i++) {
+                            Thread.sleep(400);
+                            System.out.print(".");
+                        }
+
+                        fila.adicionarOS(novaOs);
+                        System.out.println("\n✅ OS " + id + " Cadastrada com Sucesso!");
+                    }
 
                 } catch (NumberFormatException e) {
                     System.out.println("\n⚠️ ERRO: Você digitou um valor inválido (esperado número). Cadastro cancelado.");
@@ -97,6 +102,12 @@ public class Main {
                     System.out.println("\n✅ A fila está vazia. Nenhum problema pendente!");
                 } else {
                     OrdemServico osDaVez = fila.proximaOS();
+
+                    if (osDaVez == null) {
+                        System.out.println("\n⚠️ Erro interno: OS não encontrada na fila.");
+                        continue;
+                    }
+
                     System.out.println("\n🔍 Buscando técnico para: " + osDaVez.getDescricao());
 
                     System.out.print("Analisando fila e cruzando dados");
@@ -110,14 +121,16 @@ public class Main {
 
                     if (tecnicoIdeal.isPresent()) {
                         System.out.println("👷 Técnico ideal alocado: " + tecnicoIdeal.get().getNome());
+                        tecnicoIdeal.get().setOsAtual(osDaVez);
                         tecnicoIdeal.get().setOcupado(true);
                         osDaVez.setStatus(StatusOS.EM_ANDAMENTO);
 
-                        // ⏳ Envelhece a fila (resolve a inanição)
+                        // Envelhece a fila (resolve a inanição)
                         fila.envelhecerFila(1);
                         System.out.println("⏳ O tempo de espera das OSs restantes foi atualizado!");
                     } else {
                         System.out.println("⚠️ Nenhum técnico disponível ou com nível suficiente para essa OS.");
+                        osDaVez.incrementarTempoEspera(1);
                         fila.adicionarOS(osDaVez);
                     }
                 }
@@ -141,7 +154,12 @@ public class Main {
                             .findFirst();
 
                     if (tecnicoPraLiberar.isPresent() && tecnicoPraLiberar.get().isOcupado()) {
-                        tecnicoPraLiberar.get().setOcupado(false);
+                        Tecnico tecnico = tecnicoPraLiberar.get();
+                        if(tecnico.getOsAtual() != null){
+                            tecnico.getOsAtual().setStatus(StatusOS.CONCLUIDA);
+                        }
+                        tecnico.setOsAtual(null);
+                        tecnico.setOcupado(false);
                         System.out.println("🎉 Atendimento concluído! O técnico " + tecnicoPraLiberar.get().getNome() + " está livre.");
                     } else {
                         System.out.println("⚠️ Técnico não encontrado ou já está livre.");

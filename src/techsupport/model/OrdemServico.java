@@ -3,6 +3,7 @@ package techsupport.model;
 // Transformamos em classe abstrata para aplicar Herança.
 // Ela guarda o peso e o tempo estimado, essenciais para a Fila de Prioridade (PriorityQueue).
 public abstract class OrdemServico {
+    private static int contadorGlobal = 0;
     private String id;
     private String descricao;
     private ComplexidadeOS complexidade;
@@ -10,6 +11,7 @@ public abstract class OrdemServico {
     private int tempoEspera; 
     private double tempoEstimado; 
     private StatusOS status;
+    private int ordemChegada;
 
     public OrdemServico(String id, String descricao, ComplexidadeOS complexidade, int gravidade, double tempoEstimado) {
         this.id = id;
@@ -19,6 +21,11 @@ public abstract class OrdemServico {
         this.tempoEstimado = tempoEstimado;
         this.tempoEspera = 0; 
         this.status = StatusOS.PENDENTE;
+        this.ordemChegada = ++contadorGlobal;
+    }
+
+    public static String gerarProximoID(){
+        return "OS-" + (contadorGlobal + 1);
     }
 
     // Método abstrato: Força as classes filhas a implementarem sua própria regra. (Polimorfismo!)
@@ -45,4 +52,5 @@ public abstract class OrdemServico {
     public int getTempoEspera() { return tempoEspera; }
     public double getTempoEstimado() { return tempoEstimado; }
     public StatusOS getStatus() { return status; }
+    public int getOrdemChegada() { return ordemChegada; }
 }

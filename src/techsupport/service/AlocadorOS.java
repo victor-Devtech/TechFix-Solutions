@@ -21,7 +21,7 @@ public class AlocadorOS {
 
     // Regra de negócio exigida
     private static boolean podeAtender(Tecnico tecnico, ComplexidadeOS complexidade) {
-        // Júnior não dá conta de OS de nvel alto
+        // Júnior não dá conta de OS de nivel alto
         if (tecnico.getNivel() == NivelTecnico.JUNIOR && complexidade == ComplexidadeOS.ALTA) {
             return false;
         }

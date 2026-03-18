@@ -2,6 +2,8 @@ package techsupport.service;
 
 import techsupport.model.OrdemServico;
 import techsupport.strategy.EstrategiaEscalonamento;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.PriorityQueue;
 import java.util.Queue;
 
@@ -32,5 +34,20 @@ public class GerenciadorFila {
 
     public int tamanhoFila() {
         return this.filaOrdemServico.size();
+    }
+
+    public void envelhecerFila(int tempoAcrescimo) {
+        if (filaVazia()) return;
+
+        // Tira todas as OSs da fila para uma lista temporária
+        java.util.List<OrdemServico> temporaria = new java.util.ArrayList<>(this.filaOrdemServico);
+        this.filaOrdemServico.clear();
+        //  Incrementa o tempo e devolve
+
+        // add() a PriorityQueue recalcula as prioridades automaticamente
+        for (OrdemServico os : temporaria) {
+            os.incrementarTempoEspera(tempoAcrescimo);
+            this.filaOrdemServico.add(os);
+        }
     }
 }

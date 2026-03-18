@@ -1,6 +1,7 @@
 package techsupport;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.Scanner;
@@ -8,38 +9,43 @@ import techsupport.model.*;
 import techsupport.service.*;
 import techsupport.strategy.*;
 
+
 public class Main {
     public static void main(String[] args) throws InterruptedException {
         Scanner scanner = new Scanner(System.in);
 
-        // Nossa equipe da TechFix Solutions
+        // Equipe expandida: 2 técnicos de cada nível (melhoria apontada pelo professor)
         List<Tecnico> equipe = new ArrayList<>();
-        equipe.add(new Tecnico("T01", "Thiago (Senior)", NivelTecnico.SENIOR));
-        equipe.add(new Tecnico("T02", "Anderson (Pleno)", NivelTecnico.PLENO));
-        equipe.add(new Tecnico("T03", "Victor (Junior)", NivelTecnico.JUNIOR));
+        equipe.add(new Tecnico("T01", "Thiago (Senior)",   NivelTecnico.SENIOR));
+        equipe.add(new Tecnico("T02", "Maria (Senior)",    NivelTecnico.SENIOR));
+        equipe.add(new Tecnico("T03", "Anderson (Pleno)",  NivelTecnico.PLENO));
+        equipe.add(new Tecnico("T04", "Hellen (Pleno)",    NivelTecnico.PLENO));
+        equipe.add(new Tecnico("T05", "Victor (Junior)",   NivelTecnico.JUNIOR));
+        equipe.add(new Tecnico("T06", "Lis (Junior)",      NivelTecnico.JUNIOR));
 
         GerenciadorFila fila = new GerenciadorFila(PoliticasFila.maiorPrioridade());
         int opcao = 0;
 
-        // Mudamos para 5 por causa da nova opção de liberar técnico
-        while (opcao != 5) {
+        // Atualizado para 7 por causa da nova opção de listar equipe
+        while (opcao != 7) {
             System.out.println("\n========================================");
-            System.out.println("  SISTEMA TECHFIX SOLUTIONS  ");
+            System.out.println("       SISTEMA TECHFIX SOLUTIONS        ");
             System.out.println("========================================");
             System.out.println("[1] - Cadastrar Nova OS");
             System.out.println("[2] - Ver Tamanho da Fila");
             System.out.println("[3] - Alocar Próxima OS para um Técnico");
             System.out.println("[4] - Concluir Atendimento (Liberar Técnico)");
-            System.out.println("[5] - Sair");
+            System.out.println("[5] - Gerar Dados de Teste");
+            System.out.println("[6] - Ver Status da Equipe");
+            System.out.println("[7] - Sair");
             System.out.println("========================================");
             System.out.print("Escolha uma opção: ");
 
-            //  Tratamento de erro pra strings no menu
             try {
                 opcao = Integer.parseInt(scanner.nextLine());
             } catch (NumberFormatException e) {
-                System.out.println("\n⚠️ ERRO: Entrada inválida! Por favor, digite apenas números de 1 a 5.");
-                continue; // Volta para o início do laço while
+                System.out.println("\n⚠️ ERRO: Entrada inválida! Por favor, digite apenas números de 1 a 7.");
+                continue;
             }
 
             if (opcao == 1) {
@@ -63,7 +69,6 @@ public class Main {
                     if (gravidade < 1 || gravidade > 10) {
                         System.out.println("\n⚠️ ERRO: Gravidade deve ser entre 1 e 10. Cadastro cancelado.");
                     } else {
-
                         System.out.print("Tempo estimado para resolução (em horas): ");
                         double tempoEstimado = Double.parseDouble(scanner.nextLine());
 
@@ -101,37 +106,49 @@ public class Main {
                 if (fila.filaVazia()) {
                     System.out.println("\n✅ A fila está vazia. Nenhum problema pendente!");
                 } else {
-                    OrdemServico osDaVez = fila.proximaOS();
-
-                    if (osDaVez == null) {
-                        System.out.println("\n⚠️ Erro interno: OS não encontrada na fila.");
-                        continue;
-                    }
-
-                    System.out.println("\n🔍 Buscando técnico para: " + osDaVez.getDescricao());
-
-                    System.out.print("Analisando fila e cruzando dados");
+                    System.out.print("\nAnalisando fila e cruzando dados");
                     for (int i = 0; i < 4; i++) {
                         Thread.sleep(500);
                         System.out.print(".");
                     }
                     System.out.println();
 
-                    Optional<Tecnico> tecnicoIdeal = AlocadorOS.buscarTecnicoDisponivel(equipe, osDaVez);
+                    List<OrdemServico> candidatas = new ArrayList<>();
+                    while (!fila.filaVazia()) {
+                        candidatas.add(fila.proximaOS());
+                    }
 
-                    if (tecnicoIdeal.isPresent()) {
-                        System.out.println("👷 Técnico ideal alocado: " + tecnicoIdeal.get().getNome());
-                        tecnicoIdeal.get().setOsAtual(osDaVez);
-                        tecnicoIdeal.get().setOcupado(true);
-                        osDaVez.setStatus(StatusOS.EM_ANDAMENTO);
+                    OrdemServico osAlocada = null;
+                    Tecnico tecnicoEscolhido = null;
 
-                        // Envelhece a fila (resolve a inanição)
+                    for (OrdemServico candidata : candidatas) {
+                        Optional<Tecnico> tecnicoIdeal = AlocadorOS.buscarTecnicoDisponivel(equipe, candidata);
+                        if (tecnicoIdeal.isPresent()) {
+                            osAlocada = candidata;
+                            tecnicoEscolhido = tecnicoIdeal.get();
+                            break;
+                        }
+                    }
+
+                    if (osAlocada != null) {
+                        candidatas.remove(osAlocada);
+                        for (OrdemServico restante : candidatas) {
+                            fila.adicionarOS(restante);
+                        }
+
+                        System.out.println("🔍 OS selecionada: " + osAlocada.getDescricao());
+                        System.out.println("👷 Técnico ideal alocado: " + tecnicoEscolhido.getNome());
+                        tecnicoEscolhido.setOsAtual(osAlocada);
+                        tecnicoEscolhido.setOcupado(true);
+                        osAlocada.setStatus(StatusOS.EM_ANDAMENTO);
+
                         fila.envelhecerFila(1);
                         System.out.println("⏳ O tempo de espera das OSs restantes foi atualizado!");
                     } else {
-                        System.out.println("⚠️ Nenhum técnico disponível ou com nível suficiente para essa OS.");
-                        osDaVez.incrementarTempoEspera(1);
-                        fila.adicionarOS(osDaVez);
+                        for (OrdemServico restante : candidatas) {
+                            fila.adicionarOS(restante);
+                        }
+                        System.out.println("⚠️ Nenhum técnico disponível ou com nível suficiente para qualquer OS na fila.");
                     }
                 }
 
@@ -155,7 +172,7 @@ public class Main {
 
                     if (tecnicoPraLiberar.isPresent() && tecnicoPraLiberar.get().isOcupado()) {
                         Tecnico tecnico = tecnicoPraLiberar.get();
-                        if(tecnico.getOsAtual() != null){
+                        if (tecnico.getOsAtual() != null) {
                             tecnico.getOsAtual().setStatus(StatusOS.CONCLUIDA);
                         }
                         tecnico.setOsAtual(null);
@@ -165,10 +182,65 @@ public class Main {
                         System.out.println("⚠️ Técnico não encontrado ou já está livre.");
                     }
                 }
+
+            } else if (opcao == 5) {
+                carregarDadosDemonstracao(fila);
+
+            } else if (opcao == 6) {
+                // Lista a equipe, solicitação do professor
+                System.out.println("\n--- STATUS DA EQUIPE ---");
+                System.out.println("----------------------------------------");
+                equipe.stream()
+                        .sorted(Comparator.comparing(Tecnico::getNivel))
+                        .forEach(t -> System.out.println(
+                                " " + t.getNivel()
+                                + " | " + t.getId()
+                                + " | " + t.getNome()
+                                + " | " + (t.isOcupado() ? "OCUPADO" : "LIVRE")
+                        ));
+                System.out.println("----------------------------------------");
+
+                // Contadores usando stream e filter
+                long livres  = equipe.stream().filter(t -> !t.isOcupado()).count();
+                long ocupados = equipe.stream().filter(Tecnico::isOcupado).count();
+                System.out.println("Total: " + equipe.size()
+                        + " técnicos | " + livres + " livres"
+                        + " | " + ocupados + " ocupados");
             }
         }
 
         System.out.println("\nSistema encerrado. Bom trabalho, equipe!");
         scanner.close();
+    }
+
+    private static void carregarDadosDemonstracao(GerenciadorFila fila) {
+        System.out.println("\n⏳ Carregando dados de demonstração...");
+
+        fila.adicionarOS(new OSHardware(OrdemServico.gerarProximoID(),
+                "Servidor principal não inicializa",
+                ComplexidadeOS.ALTA, 10, 4.0, "Fonte ATX 750W"));
+
+        fila.adicionarOS(new OSSoftware(OrdemServico.gerarProximoID(),
+                "Usuário sem acesso ao sistema ERP",
+                ComplexidadeOS.BAIXA, 3, 0.5, "Windows 11"));
+
+        fila.adicionarOS(new OSHardware(OrdemServico.gerarProximoID(),
+                "Notebook da diretoria com tela quebrada",
+                ComplexidadeOS.MEDIA, 7, 2.0, "Display LED 15.6''"));
+
+        fila.adicionarOS(new OSSoftware(OrdemServico.gerarProximoID(),
+                "Ransomware detectado em estação de trabalho",
+                ComplexidadeOS.ALTA, 10, 6.0, "Windows 10"));
+
+        fila.adicionarOS(new OSSoftware(OrdemServico.gerarProximoID(),
+                "Reset de senha do e-mail corporativo",
+                ComplexidadeOS.BAIXA, 2, 0.3, "Outlook 365"));
+
+        fila.adicionarOS(new OSHardware(OrdemServico.gerarProximoID(),
+                "Switch de rede com falha intermitente",
+                ComplexidadeOS.ALTA, 8, 3.5, "Switch Cisco 24P"));
+
+        System.out.println("✅ OSs de demonstração carregadas com sucesso!");
+        System.out.println("(2x ALTA, 2x MEDIA, 2x BAIXA... Totalizando 6 Os!)");
     }
 }

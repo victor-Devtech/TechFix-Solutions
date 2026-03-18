@@ -9,7 +9,7 @@ public class PoliticasFila {
 
     // 1. FIFO (Ordem de chegada)
     public static EstrategiaEscalonamento fifo() {
-        return () -> Comparator.comparingInt(OrdemServico::getTempoEspera).reversed();
+        return () -> Comparator.comparingInt(OrdemServico::getOrdemChegada);
     }
 
     // 2. Maior Prioridade Primeiro (Fórmula: Gravidade + Tempo Espera)
